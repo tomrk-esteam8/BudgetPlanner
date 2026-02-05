@@ -1,0 +1,115 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+package domain {
+
+  class MonthlyFunds {
+    - year : int
+    - month : int
+    - amount : BigDecimal
+    --
+    + period() : YearMonth
+    + amount() : BigDecimal
+  }
+
+  class MonthlySavings {
+    - amount : BigDecimal
+    --
+    + amount() : BigDecimal
+  }
+
+  class CyclicExpense {
+    - id : UUID
+    - name : String
+    - cycleInterval : int
+    - totalCycles : Integer
+    - active : boolean
+    --
+    + rateFor(month : YearMonth) : Optional<CyclicExpenseRate>
+    + isActive() : boolean
+  }
+
+  class CyclicExpenseRate {
+    - amount : BigDecimal
+    - validFrom : LocalDate
+    --
+    + amount() : BigDecimal
+    + validFrom() : LocalDate
+  }
+
+  class Expense {
+    - amount : BigDecimal
+    - category : String
+    - spentAt : LocalDate
+    --
+    + amount() : BigDecimal
+    + inMonth(month : YearMonth) : boolean
+  }
+
+  class MonthlySummary {
+    - month : YearMonth
+    - funds : BigDecimal
+    - savings : BigDecimal
+    - fixedCosts : BigDecimal
+    - spent : BigDecimal
+    - available : BigDecimal
+    - dailyLimit : BigDecimal
+  }
+
+  class AccountingMonth {
+    - yearMonth : YearMonth
+    --
+    + daysInMonth() : int
+    + firstDay() : LocalDate
+    + lastDay() : LocalDate
+  }
+}
+
+package service {
+
+  interface MonthlySummaryService {
+    + calculate(
+        month : AccountingMonth,
+        funds : MonthlyFunds,
+        savings : MonthlySavings,
+        cyclicExpenses : List<CyclicExpense>,
+        expenses : List<Expense>
+      ) : MonthlySummary
+  }
+
+  class CyclicExpenseCalculator {
+    + applies(
+        expense : CyclicExpense,
+        month : AccountingMonth
+      ) : boolean
+
+    + amountForMonth(
+        expense : CyclicExpense,
+        month : AccountingMonth
+      ) : BigDecimal
+  }
+
+  class DailyLimitCalculator {
+    + calculate(
+        available : BigDecimal,
+        month : AccountingMonth
+      ) : BigDecimal
+  }
+}
+
+' =====================
+' RELATIONSHIPS
+' =====================
+
+CyclicExpense "1" o-- "*" CyclicExpenseRate : rates
+MonthlySummaryService --> MonthlySummary
+MonthlySummaryService --> MonthlyFunds
+MonthlySummaryService --> MonthlySavings
+MonthlySummaryService --> CyclicExpense
+MonthlySummaryService --> Expense
+MonthlySummaryService --> AccountingMonth
+
+MonthlySummaryService ..> CyclicExpenseCalculator
+MonthlySummaryService ..> DailyLimitCalculator
+
+@enduml

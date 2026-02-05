@@ -1,0 +1,28 @@
+# Maven
+target/
+*.jar
+*.war
+*.ear
+
+# Maven Wrapper - ignore downloaded jar
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Spring Boot
+application.log
+logs/
+
+# Build
+build/
+out/
+
+# Dependencies
+*.iml
+
