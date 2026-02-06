@@ -226,7 +226,7 @@ In this example, for March 17:
 
 ## Testing
 
-The project includes comprehensive test coverage with 67 tests:
+The project includes comprehensive test coverage with 118 tests:
 
 **Run all tests:**
 ```bash
@@ -249,6 +249,11 @@ The project includes comprehensive test coverage with 67 tests:
 - Calculator component tests including cycleInterval validation
 - Controller integration tests with MockMvc
 - Application context loading test
+- **Validation test suite (42 new tests):**
+  - `ValidationTest` (19 tests): Domain entity validation (Expense, MonthlyFunds, CyclicExpense, CyclicExpenseRate)
+  - `MonthlySummaryControllerValidationTest` (15 tests): Date parameter validation (year ranges 1900-2100, month 1-12, day 1-31)
+  - `MonthlySummaryServiceEdgeCasesTest` (8 tests): Business logic edge cases (null funds, negative available, missing rates, month boundary dates)
+  - Centralized error handling with `GlobalExceptionHandler` for HTTP 400 responses with descriptive messages
 - **Comprehensive yearly budget integration test** that validates:
   - Full-year budget with monthly allocations
   - Multiple cyclic expenses with different intervals (monthly, trimonthly)
