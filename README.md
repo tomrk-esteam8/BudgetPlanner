@@ -183,9 +183,14 @@ curl -X POST http://localhost:8080/api/v1/expenses \
 ```
 
 ### Get Monthly Summary
-The monthly summary endpoint includes a **daily limit** calculated based on remaining days in the month from a specific date.
+The monthly summary endpoint includes a **daily limit** calculated based on remaining days in the month from a specific date. Expenses are calculated only up to the requested date.
 
 **Formula:** `daily limit = available / remaining days` (including the current day)
+
+**Key behavior:**
+- **Expenses are date-filtered:** Only expenses on or before the requested date are included
+- **Default date:** When year/month are provided without day, defaults to end-of-month (to show full month's expenses)
+- **With specific date:** Shows available budget based on expenses up to that date
 
 **Request without parameters** (uses current date):
 ```bash
@@ -213,14 +218,26 @@ Response:
 ```
 
 In this example, for March 17:
+- Only expenses through March 17 are counted (earlier expenses within March)
 - Remaining days: 31 - 17 + 1 = 15 days
 - Daily limit: 3400.00 / 15 = 226.67
 
-**How daily limit changes throughout the month:**
-- March 1 (31 remaining days): 3400.00 / 31 = 109.68
-- March 15 (17 remaining days): 3400.00 / 17 = 200.00
-- March 31 (1 remaining day): 3400.00 / 1 = 3400.00
-- If available ≤ 0: daily limit is 0
+**How values change throughout March as expenses accumulate:**
+- **March 1** (before any expenses): spent = 0.00, available = 3600.00, daily limit = 3600.00 / 31 = 116.13
+- **March 10** (some expenses already recorded): spent = 50.00, available = 3550.00, daily limit = 3550.00 / 22 = 161.36
+- **March 17** (more expenses): spent = 100.00, available = 3500.00, daily limit = 3500.00 / 15 = 233.33
+- **March 31** (all month's expenses): spent = 240.00, available = 3360.00, daily limit = 3360.00 / 1 = 3360.00
+
+**Request for monthly totals** (omit day to default to end-of-month):
+```bash
+curl -X GET "http://localhost:8080/api/v1/summary?year=2026&month=3" \
+  -H "Content-Type: application/json"
+```
+Returns summary for March 31 with all month's expenses included.
+
+**Notes:**
+- If available ≤ 0: daily limit is always 0
+- Expenses are only counted if they fall on or before the requested date
 
 ****
 
@@ -269,16 +286,31 @@ The available budget is calculated as:
 available = funds - savings - fixedCosts - spent
 ```
 
+Where:
+- **funds**: Total monthly budget allocation
+- **savings**: Amount set aside (subtracted from available)
+- **fixedCosts**: Sum of all active cyclic expenses for the month
+- **spent**: Sum of all individual expenses **up to the requested date** (not the whole month)
+
 The daily limit is calculated based on remaining days in the month from a specific date:
 ```
 dailyLimit = available / remainingDays (including current day)
 ```
 
-**Example:** On March 17 in a 31-day month with $800 available:
-- Remaining days: 31 - 17 + 1 = 15 days
-- Daily limit: $800 / 15 = $53.33
+**Expense Filtering by Date:**
+Expenses are only included in the `spent` calculation if they occur on or before the requested date. This allows you to:
+- Check your budget status at any point during the month
+- See how available funds change as expenses accumulate
+- Plan daily spending based on actual expenses incurred so far
 
-If no date is specified in the request, the calculation uses today's date. This allows users to see how much they can spend per day based on actual remaining time in the month.
+**Example:** On March 17 in a 31-day month with $800 available and an expense on March 20:
+- On March 17: spent = $100 (only March 5, 10 expenses), available = $700, daily limit = $700 / 15 = $46.67
+- On March 28: spent = $240 (all expenses including March 20), available = $560, daily limit = $560 / 4 = $140.00
+
+**Date Handling:**
+- If no date is specified in the request, uses today's date
+- If year/month provided without day, defaults to end-of-month (shows full month's expenses)
+- This allows flexible querying: get today's status or plan based on specific dates
 
 If available ≤ 0, daily limit is always 0.
 
