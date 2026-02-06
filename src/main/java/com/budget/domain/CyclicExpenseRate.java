@@ -2,6 +2,7 @@ package com.budget.domain;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -30,9 +31,13 @@ public class CyclicExpenseRate {
     private CyclicExpense cyclicExpense;
 
     @Column(nullable = false, precision = 19, scale = 2)
+    @NotNull(message = "Amount cannot be null")
+    @DecimalMin(value = "0.01", message = "Amount must be greater than 0")
     private BigDecimal amount;
 
     @Column(nullable = false)
+    @NotNull(message = "Valid from date cannot be null")
+    @PastOrPresent(message = "Valid from date cannot be in the future")
     private LocalDate validFrom;
 
     @Column(nullable = false)

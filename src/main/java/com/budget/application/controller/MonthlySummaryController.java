@@ -44,6 +44,7 @@ public class MonthlySummaryController {
     @Parameter(name = "month", description = "Month 1-12 (required if year or day provided)", example = "2")
     @Parameter(name = "day", description = "Day of month 1-31 (optional, defaults to 1 if year/month provided)", example = "17", required = false)
     @ApiResponse(responseCode = "200", description = "Monthly summary calculated")
+    @ApiResponse(responseCode = "400", description = "Invalid date parameters")
     public ResponseEntity<MonthlySummary> getSummary(
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) Integer month,
@@ -59,12 +60,29 @@ public class MonthlySummaryController {
             if (year == null || month == null) {
                 throw new IllegalArgumentException("If specifying a date, both year and month are required");
             }
+            
+            // Validate year range
+            if (year < 1900 || year > 2100) {
+                throw new IllegalArgumentException("Year must be between 1900 and 2100");
+            }
+            
+            // Validate month range
+            if (month < 1 || month > 12) {
+                throw new IllegalArgumentException("Month must be between 1 and 12");
+            }
+            
             // Day defaults to 1 if not provided
             int dayOfMonth = day != null ? day : 1;
+            
+            // Validate day range
+            if (dayOfMonth < 1 || dayOfMonth > 31) {
+                throw new IllegalArgumentException("Day must be between 1 and 31");
+            }
+            
             try {
                 requestDate = LocalDate.of(year, month, dayOfMonth);
             } catch (Exception e) {
-                throw new IllegalArgumentException("Invalid date: year=" + year + ", month=" + month + ", day=" + dayOfMonth, e);
+                throw new IllegalArgumentException("Invalid date: year=" + year + ", month=" + month + ", day=" + dayOfMonth + ". " + e.getMessage(), e);
             }
         }
         

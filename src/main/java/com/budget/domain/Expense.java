@@ -1,6 +1,7 @@
 package com.budget.domain;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,12 +24,17 @@ public class Expense {
     private Long id;
 
     @Column(nullable = false, precision = 19, scale = 2)
+    @NotNull(message = "Amount cannot be null")
+    @DecimalMin(value = "0.01", message = "Amount must be greater than 0")
     private BigDecimal amount;
 
     @Column(nullable = false)
+    @NotBlank(message = "Category cannot be blank")
     private String category;
 
     @Column(nullable = false)
+    @NotNull(message = "Spent date cannot be null")
+    @PastOrPresent(message = "Spent date cannot be in the future")
     private LocalDate spentAt;
 
     public BigDecimal amount() {

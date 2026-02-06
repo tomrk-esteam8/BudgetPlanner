@@ -2,6 +2,7 @@ package com.budget.domain;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -29,12 +30,15 @@ public class CyclicExpense {
     private UUID id;
 
     @Column(nullable = false)
+    @NotBlank(message = "Cyclic expense name cannot be blank")
     private String name;
 
     @Column(nullable = false)
+    @Min(value = 1, message = "Cycle interval must be at least 1 month")
     private int cycleInterval;
 
     @Column(nullable = true)
+    @Min(value = 1, message = "Total cycles must be at least 1")
     private Integer totalCycles;
 
     @Column(nullable = false)
