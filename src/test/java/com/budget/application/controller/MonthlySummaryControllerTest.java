@@ -77,7 +77,7 @@ class MonthlySummaryControllerTest {
                 .param("month", "2")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.date").value("2026-02-01"))
+                .andExpect(jsonPath("$.date").value("2026-02-28"))
                 .andExpect(jsonPath("$.funds").value(5000.00))
                 .andExpect(jsonPath("$.savings").value(1000.00))
                 .andExpect(jsonPath("$.spent").value(100.00));
@@ -90,7 +90,7 @@ class MonthlySummaryControllerTest {
                 .param("month", "2")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.date").value("2026-02-01"))
+                .andExpect(jsonPath("$.date").value("2026-02-28"))
                 .andExpect(jsonPath("$.funds").value(0.00))
                 .andExpect(jsonPath("$.savings").value(0.00));
     }
@@ -127,7 +127,7 @@ class MonthlySummaryControllerTest {
                 .param("month", "2")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.date").value("2026-02-01"))
+                .andExpect(jsonPath("$.date").value("2026-02-28"))
                 .andExpect(jsonPath("$.fixedCosts").value(1500.00));
     }
 }

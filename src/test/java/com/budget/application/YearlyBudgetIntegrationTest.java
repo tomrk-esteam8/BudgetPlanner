@@ -211,7 +211,8 @@ class YearlyBudgetIntegrationTest {
                 yearMonth.atEndOfMonth()
         );
 
-        return monthlySummaryService.calculate(accountingMonth, funds, savings, cyclicExpenses, expenses);
+        // Pass end-of-month date to include all expenses for the month
+        return monthlySummaryService.calculate(accountingMonth, funds, savings, cyclicExpenses, expenses, yearMonth.atEndOfMonth());
     }
 
     private void verifyJanuarySummary() {
@@ -402,106 +403,115 @@ class YearlyBudgetIntegrationTest {
     @Test
     void testSummaryMidMonthCalculations() {
         // Verify that daily limit changes correctly throughout the month
-        // as remaining days decrease (expenses already set by setupYearlyBudget)
+        // as remaining days decrease AND as expenses accumulate
         
         // Setup
         setupYearlyBudget();
         
-        // March: rent 1500 + car 350 = 1850 fixed costs, expenses 160+55+25=240
-        // Available: 5000 - 1000 - 1850 - 240 = 1910
-        BigDecimal marchAvailable = new BigDecimal("1910.00");
+        // March: rent 1500 + car 350 = 1850 fixed costs
+        // Expenses on: March 3, 18, 20
+        // Fixed costs remain constant, but spent increases as we move through the month
         
-        // Test on March 1 (first day): 31 remaining days
-        // Expected daily limit: 1910 / 31 = 61.61
+        // Test on March 1 (first day): 31 remaining days, NO expenses yet
+        // Available: 5000 - 1000 - 1850 - 0 = 2150
+        // Daily limit: 2150 / 31 = 69.35
         MonthlySummary march1Summary = getSummarySummaryForDate(3, 1);
-        assertEquals(marchAvailable, march1Summary.getAvailable());
+        assertEquals(new BigDecimal("2150.00"), march1Summary.getAvailable());
         BigDecimal march1DailyLimit = march1Summary.getDailyLimit();
-        assertEquals(new BigDecimal("61.61"), march1DailyLimit, "March 1: 1910 / 31 = 61.61");
+        assertEquals(new BigDecimal("69.35"), march1DailyLimit, "March 1: 2150 / 31 = 69.35");
         
-        // Test on March 15 (mid-month): 17 remaining days (31 - 15 + 1)
-        // Expected daily limit: 1910 / 17 = 112.35
+        // Test on March 15 (mid-month): 17 remaining days, only March 3 expense
+        // Available: 5000 - 1000 - 1850 - 160 = 1990
+        // Daily limit: 1990 / 17 = 117.06
         MonthlySummary march15Summary = getSummarySummaryForDate(3, 15);
-        assertEquals(marchAvailable, march15Summary.getAvailable());
+        assertEquals(new BigDecimal("1990.00"), march15Summary.getAvailable());
         BigDecimal march15DailyLimit = march15Summary.getDailyLimit();
-        assertEquals(new BigDecimal("112.35"), march15DailyLimit, "March 15: 1910 / 17 = 112.35");
+        assertEquals(new BigDecimal("117.06"), march15DailyLimit, "March 15: 1990 / 17 = 117.06");
         
-        // Test on March 31 (last day): 1 remaining day
-        // Expected daily limit: 1910 / 1 = 1910.00
+        // Test on March 31 (last day): 1 remaining day, all expenses accumulated
+        // Available: 5000 - 1000 - 1850 - 240 = 1910
+        // Daily limit: 1910 / 1 = 1910.00
         MonthlySummary march31Summary = getSummarySummaryForDate(3, 31);
-        assertEquals(marchAvailable, march31Summary.getAvailable());
+        assertEquals(new BigDecimal("1910.00"), march31Summary.getAvailable());
         BigDecimal march31DailyLimit = march31Summary.getDailyLimit();
         assertEquals(new BigDecimal("1910.00"), march31DailyLimit, "March 31: 1910 / 1 = 1910.00");
         
         // Verify daily limits increase as we approach end of month
+        // (even though available decreases due to more expenses)
         assertTrue(march15DailyLimit.compareTo(march1DailyLimit) > 0);
         assertTrue(march31DailyLimit.compareTo(march15DailyLimit) > 0);
         
         // On last day, daily limit should equal available amount
-        assertEquals(marchAvailable, march31DailyLimit);
+        assertEquals(march31Summary.getAvailable(), march31DailyLimit);
     }
 
     @Test
     void testSummaryMidMonthMultipleMonths() {
         // Verify mid-month calculations work correctly for different months
-        // with different numbers of days and different available amounts
+        // with different numbers of days and expenses that accumulate during the month
         
         // Setup
         setupYearlyBudget();
         
         // February (28 days) on Feb 14: 15 remaining days
-        // Feb: rent 1500 + car 350 = 1850, expenses 200+50=250
-        // Available: 5000 - 1000 - 1850 - 250 = 1900
+        // Feb: rent 1500 + car 350 = 1850, expenses on Feb 8, 12 (both before Feb 14)
+        // Available: 5000 - 1000 - 1850 - (200 + 50) = 1900
         // Daily limit: 1900 / 15 = 126.67
         MonthlySummary feb14Summary = getSummarySummaryForDate(2, 14);
         assertEquals(new BigDecimal("1900.00"), feb14Summary.getAvailable());
         assertEquals(new BigDecimal("126.67"), feb14Summary.getDailyLimit(), "Feb 14: 1900 / 15 = 126.67");
         
         // April (30 days) on Apr 15: 16 remaining days
-        // April: rent 1500 + car 350 + insurance 200 = 2050, expenses 180+48=228
-        // Available: 5000 - 1000 - 2050 - 228 = 1722
+        // April: rent 1500 + car 350 + insurance 200 = 2050, expenses on Apr 5, 14 (both before Apr 15)
+        // Available: 5000 - 1000 - 2050 - (180 + 48) = 1722
         // Daily limit: 1722 / 16 = 107.62
         MonthlySummary apr15Summary = getSummarySummaryForDate(4, 15);
         assertEquals(new BigDecimal("1722.00"), apr15Summary.getAvailable());
         assertEquals(new BigDecimal("107.62"), apr15Summary.getDailyLimit(), "Apr 15: 1722 / 16 = 107.62");
         
-        // July (31 days) on Jul 15: 17 remaining days (still has original insurance rate 200)
-        // July: rent 1500 + car 350 + insurance 200 = 2050, expenses 175+58+40=273
-        // Available: 5000 - 1000 - 2050 - 273 = 1677
-        // Daily limit: 1677 / 17 = 98.65
+        // July (31 days) on Jul 15: 17 remaining days
+        // Note: This test doesn't include the rate change that happens in testCompleteYearlyBudgetWithCyclicExpensesAndRandomExpenses
+        // So insurance rate is still the initial 200 (not the new 250)
+        // July: rent 1500 + car 350 + insurance 200 = 2050, expenses on Jul 8 only (17, 22 are after)
+        // Available: 5000 - 1000 - 2050 - 175 = 1775
+        // Daily limit: 1775 / 17 = 104.41
         MonthlySummary jul15Summary = getSummarySummaryForDate(7, 15);
-        assertEquals(new BigDecimal("1677.00"), jul15Summary.getAvailable());
-        assertEquals(new BigDecimal("98.65"), jul15Summary.getDailyLimit(), "Jul 15: 1677 / 17 = 98.65");
+        assertEquals(new BigDecimal("1775.00"), jul15Summary.getAvailable());
+        assertEquals(new BigDecimal("104.41"), jul15Summary.getDailyLimit(), "Jul 15: 1775 / 17 = 104.41");
     }
 
     @Test
     void testSummaryEndOfMonthComparison() {
-        // Verify end-of-month calculations show maximum daily limits
+        // Verify end-of-month calculations with day-based expense filtering
+        // Daily limit increases as remaining days decrease, even as available decreases from accumulated expenses
         
         // Setup
         setupYearlyBudget();
         
-        // January: rent 1500 + car 350 + insurance 200 = 2050, expenses 150+45+30 = 225
-        // Available: 5000 - 1000 - 2050 - 225 = 1725
-        BigDecimal januaryAvailable = new BigDecimal("1725.00");
+        // January: rent 1500 + car 350 + insurance 200 = 2050
+        // Expenses occur on: Jan 5, 10, 15
         
         // Get summaries at different points for the same month
-        MonthlySummary jan1Summary = getSummarySummaryForDate(1, 1);   // 31 remaining days
-        MonthlySummary jan15Summary = getSummarySummaryForDate(1, 15);  // 17 remaining days (31 - 15 + 1)
-        MonthlySummary jan31Summary = getSummarySummaryForDate(1, 31);  // 1 remaining day
+        MonthlySummary jan1Summary = getSummarySummaryForDate(1, 1);   // 31 remaining days, no expenses yet
+        MonthlySummary jan15Summary = getSummarySummaryForDate(1, 15);  // 17 remaining days, all expenses accumulated
+        MonthlySummary jan31Summary = getSummarySummaryForDate(1, 31);  // 1 remaining day, all expenses accumulated
         
-        // Verify available is consistent across all dates
-        assertEquals(januaryAvailable, jan1Summary.getAvailable());
-        assertEquals(januaryAvailable, jan15Summary.getAvailable());
-        assertEquals(januaryAvailable, jan31Summary.getAvailable());
+        // Jan 1: No expenses yet
+        // Available: 5000 - 1000 - 2050 - 0 = 1950
+        // Daily limit: 1950 / 31 = 62.90
+        assertEquals(new BigDecimal("1950.00"), jan1Summary.getAvailable(), "Jan 1 available");
+        assertEquals(new BigDecimal("62.90"), jan1Summary.getDailyLimit(), "Jan 1: 1950 / 31 = 62.90");
         
-        // Verify daily limits with exact calculations
-        // Jan 1: 1725 / 31 = 55.65
-        assertEquals(new BigDecimal("55.65"), jan1Summary.getDailyLimit(), "Jan 1: 1725 / 31 = 55.65");
-        
-        // Jan 15: 1725 / 17 = 101.47
+        // Jan 15: All expenses on or before Jan 15 (Jan 5, 10, 15)
+        // Available: 5000 - 1000 - 2050 - (150 + 45 + 30) = 1725
+        // Daily limit: 1725 / 17 = 101.47
+        assertEquals(new BigDecimal("1725.00"), jan15Summary.getAvailable(), "Jan 15 available");
         assertEquals(new BigDecimal("101.47"), jan15Summary.getDailyLimit(), "Jan 15: 1725 / 17 = 101.47");
         
-        // Jan 31: 1725 / 1 = 1725.00
+        // Jan 31: All expenses (same as Jan 15)
+        // Available: 5000 - 1000 - 2050 - 225 = 1725
+        // Daily limit: 1725 / 1 = 1725.00
+        assertEquals(new BigDecimal("1725.00"), jan31Summary.getAvailable(), "Jan 31 available");
         assertEquals(new BigDecimal("1725.00"), jan31Summary.getDailyLimit(), "Jan 31: 1725 / 1 = 1725.00");
         
         // Verify daily limits increase as we approach end of month

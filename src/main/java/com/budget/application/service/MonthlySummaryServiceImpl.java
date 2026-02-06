@@ -37,16 +37,16 @@ public class MonthlySummaryServiceImpl implements MonthlySummaryService {
         BigDecimal fundsAmount = funds != null ? funds.getAmount() : BigDecimal.ZERO;
         BigDecimal savingsAmount = savings != null ? savings.getAmount() : BigDecimal.ZERO;
 
+        LocalDate dateForCalculation = requestDate != null ? requestDate : LocalDate.now();
         BigDecimal fixedCosts = calculateFixedCosts(cyclicExpenses, month);
-        BigDecimal spent = calculateSpent(expenses, month);
+        BigDecimal spent = calculateSpent(expenses, month, dateForCalculation);
         // available = funds - savings - fixedCosts - spent
+        // Use requestDate to calculate daily limit based on remaining days
         BigDecimal available = fundsAmount
                 .subtract(savingsAmount)
                 .subtract(fixedCosts)
                 .subtract(spent);
 
-        // Use requestDate to calculate daily limit based on remaining days
-        LocalDate dateForCalculation = requestDate != null ? requestDate : LocalDate.now();
         BigDecimal dailyLimit = dailyLimitCalculator.calculateFromDate(available, dateForCalculation);
 
         return MonthlySummary.builder()
@@ -67,9 +67,10 @@ public class MonthlySummaryServiceImpl implements MonthlySummaryService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    private BigDecimal calculateSpent(List<Expense> expenses, AccountingMonth month) {
+    private BigDecimal calculateSpent(List<Expense> expenses, AccountingMonth month, LocalDate requestDate) {
         return expenses.stream()
                 .filter(expense -> expense.inMonth(month.getYearMonth()))
+                .filter(expense -> !expense.getSpentAt().isAfter(requestDate))
                 .map(Expense::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }

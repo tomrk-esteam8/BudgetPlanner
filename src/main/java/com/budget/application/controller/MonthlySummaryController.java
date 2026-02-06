@@ -42,7 +42,7 @@ public class MonthlySummaryController {
     @Operation(summary = "Get monthly summary", description = "Calculate and retrieve summary for a specific or current date. By default uses today's date")
     @Parameter(name = "year", description = "Year (required if month/day provided)", example = "2026")
     @Parameter(name = "month", description = "Month 1-12 (required if year or day provided)", example = "2")
-    @Parameter(name = "day", description = "Day of month 1-31 (optional, defaults to 1 if year/month provided)", example = "17", required = false)
+    @Parameter(name = "day", description = "Day of month 1-31 (optional, defaults to end-of-month if year/month provided)", example = "17", required = false)
     @ApiResponse(responseCode = "200", description = "Monthly summary calculated")
     @ApiResponse(responseCode = "400", description = "Invalid date parameters")
     public ResponseEntity<MonthlySummary> getSummary(
@@ -71,8 +71,9 @@ public class MonthlySummaryController {
                 throw new IllegalArgumentException("Month must be between 1 and 12");
             }
             
-            // Day defaults to 1 if not provided
-            int dayOfMonth = day != null ? day : 1;
+            // Day defaults to end-of-month if not provided (to include all expenses for the month)
+            YearMonth ym = YearMonth.of(year, month);
+            int dayOfMonth = day != null ? day : ym.lengthOfMonth();
             
             // Validate day range
             if (dayOfMonth < 1 || dayOfMonth > 31) {

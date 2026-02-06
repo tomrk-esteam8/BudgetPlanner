@@ -147,13 +147,13 @@ class MonthlySummaryControllerValidationTest {
     }
 
     @Test
-    void testGetSummary_ValidDate_WithoutDay_DefaultsTo1() throws Exception {
+    void testGetSummary_ValidDate_WithoutDay_DefaultsToEndOfMonth() throws Exception {
         mockMvc.perform(get("/v1/summary")
                 .param("year", "2026")
                 .param("month", "2")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.date").value("2026-02-01"));
+                .andExpect(jsonPath("$.date").value("2026-02-28"));
     }
 
     @Test
