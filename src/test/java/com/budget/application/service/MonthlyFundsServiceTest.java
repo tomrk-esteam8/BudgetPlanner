@@ -41,6 +41,7 @@ class MonthlyFundsServiceTest {
 
     @Test
     void testSaveMonthlyFunds() {
+        when(repository.findByYearAndMonth(2026, 2)).thenReturn(List.of());
         when(repository.save(any(MonthlyFunds.class))).thenReturn(monthlyFunds);
 
         MonthlyFunds result = service.save(monthlyFunds);
@@ -54,24 +55,46 @@ class MonthlyFundsServiceTest {
     }
 
     @Test
+        void testSaveMonthlyFundsThrowsOnDuplicate() {
+        MonthlyFunds existing = MonthlyFunds.builder()
+                .id(5L)
+                .year(2026)
+                .month(2)
+                .amount(new BigDecimal("4500.00"))
+                .build();
+
+        when(repository.findByYearAndMonth(2026, 2)).thenReturn(List.of(existing));
+
+        IllegalArgumentException thrown = assertThrows(
+            IllegalArgumentException.class,
+            () -> service.save(monthlyFunds)
+        );
+
+        assertTrue(thrown.getMessage().contains("Monthly funds already exist"));
+        verify(repository, never()).save(any(MonthlyFunds.class));
+    }
+
+    @Test
     void testFindByYearAndMonth() {
-        when(repository.findByYearAndMonth(2026, 2)).thenReturn(Optional.of(monthlyFunds));
+        when(repository.findTopByYearAndMonthOrderByIdDesc(2026, 2))
+            .thenReturn(Optional.of(monthlyFunds));
 
         Optional<MonthlyFunds> result = service.findByYearAndMonth(2026, 2);
 
         assertTrue(result.isPresent());
         assertEquals(monthlyFunds.getId(), result.get().getId());
-        verify(repository, times(1)).findByYearAndMonth(2026, 2);
+        verify(repository, times(1)).findTopByYearAndMonthOrderByIdDesc(2026, 2);
     }
 
     @Test
     void testFindByYearAndMonthNotFound() {
-        when(repository.findByYearAndMonth(2026, 3)).thenReturn(Optional.empty());
+        when(repository.findTopByYearAndMonthOrderByIdDesc(2026, 3))
+            .thenReturn(Optional.empty());
 
         Optional<MonthlyFunds> result = service.findByYearAndMonth(2026, 3);
 
         assertFalse(result.isPresent());
-        verify(repository, times(1)).findByYearAndMonth(2026, 3);
+        verify(repository, times(1)).findTopByYearAndMonthOrderByIdDesc(2026, 3);
     }
 
     @Test

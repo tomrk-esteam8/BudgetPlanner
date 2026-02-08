@@ -67,6 +67,7 @@ src/test/java/com/budget/
 ### Prerequisites
 - Java 25 or higher
 - Maven 3.9+ (optional - Maven Wrapper is included)
+- Node.js 20+ and npm (for the React frontend)
 
 ### Using Maven Wrapper (Recommended)
 
@@ -101,6 +102,39 @@ Or with global Maven:
 ```bash
 mvn clean install
 ```
+
+### Run Backend (Spring Boot)
+```bash
+./mvnw spring-boot:run
+```
+
+The API will be available at:
+```
+http://localhost:8080/api
+```
+
+### Run Frontend (React + Vite)
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The UI will be available at:
+```
+http://localhost:5173
+```
+
+The Vite dev server proxies API requests to the backend, so `/api/*` calls are
+sent to `http://localhost:8080`.
+
+### Run Backend + Frontend Together (macOS/Linux)
+```bash
+bash scripts/dev.sh
+```
+
+This script runs both dev servers and shuts them down together when you press
+Ctrl+C.
 
 ## API Documentation
 
@@ -212,8 +246,8 @@ Response:
   "savings": 1000.00,
   "fixedCosts": 1500.00,
   "spent": 100.00,
-  "available": 3400.00,
-  "dailyLimit": 226.67
+  "available": 2400.00,
+  "dailyLimit": 160.00
 }
 ```
 
@@ -222,11 +256,11 @@ In this example, for March 17:
 - Remaining days: 31 - 17 + 1 = 15 days
 - Daily limit: 3400.00 / 15 = 226.67
 
-**How values change throughout March as expenses accumulate:**
-- **March 1** (before any expenses): spent = 0.00, available = 3600.00, daily limit = 3600.00 / 31 = 116.13
-- **March 10** (some expenses already recorded): spent = 50.00, available = 3550.00, daily limit = 3550.00 / 22 = 161.36
-- **March 17** (more expenses): spent = 100.00, available = 3500.00, daily limit = 3500.00 / 15 = 233.33
-- **March 31** (all month's expenses): spent = 240.00, available = 3360.00, daily limit = 3360.00 / 1 = 3360.00
+**How values change throughout March as expenses accumulate** (with funds=5000, savings=1000, fixedCosts=1500):
+- **March 1** (before any expenses): spent = 0.00, available = 2500.00, daily limit = 2500.00 / 31 = 80.65
+- **March 10** (some expenses already recorded): spent = 50.00, available = 2450.00, daily limit = 2450.00 / 22 = 111.36
+- **March 17** (more expenses): spent = 100.00, available = 2400.00, daily limit = 2400.00 / 15 = 160.00
+- **March 31** (all month's expenses): spent = 240.00, available = 2260.00, daily limit = 2260.00 / 1 = 2260.00
 
 **Request for monthly totals** (omit day to default to end-of-month):
 ```bash
@@ -243,7 +277,7 @@ Returns summary for March 31 with all month's expenses included.
 
 ## Testing
 
-The project includes comprehensive test coverage with 118 tests:
+The project includes comprehensive backend and frontend test coverage:
 
 **Run all tests:**
 ```bash
@@ -260,12 +294,34 @@ The project includes comprehensive test coverage with 118 tests:
 ./mvnw test -Dtest=YearlyBudgetIntegrationTest
 ```
 
+**Run backend UI integration test (summary + expenses):**
+```bash
+./mvnw test -Dtest=UiSummaryExpensesIntegrationTest
+```
+
+**Run frontend unit tests (Vitest):**
+```bash
+cd frontend
+npm test
+```
+
+**Run frontend E2E tests (Playwright):**
+```bash
+cd frontend
+npm run test:e2e
+```
+
+Playwright tests require the backend and frontend dev servers to be running.
+
 **Test coverage includes:**
 - Domain entity tests (4 classes)
 - Service layer unit tests with Mockito mocking
 - Calculator component tests including cycleInterval validation
 - Controller integration tests with MockMvc
 - Application context loading test
+- Backend UI integration test for summary + expenses
+- Frontend unit tests with Vitest + React Testing Library
+- Frontend E2E tests with Playwright
 - **Validation test suite (42 new tests):**
   - `ValidationTest` (19 tests): Domain entity validation (Expense, MonthlyFunds, CyclicExpense, CyclicExpenseRate)
   - `MonthlySummaryControllerValidationTest` (15 tests): Date parameter validation (year ranges 1900-2100, month 1-12, day 1-31)
@@ -359,7 +415,7 @@ Rate B: $1600, validFrom 2026-06-01, active = true   (newly added)
 ```
 
 Calculations for months:
-- January-May 2026: Uses Rate B ($1600) if B was added before those months, else Rate A
+- January-May 2026: Uses Rate A ($1500)
 - June 2026 onwards: Uses Rate B ($1600)
 - Only active rates are considered; inactive rates are ignored in calculations
 

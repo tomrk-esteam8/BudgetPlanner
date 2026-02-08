@@ -75,6 +75,25 @@ class CyclicExpenseControllerTest {
                 .andExpect(jsonPath("$.rates.length()").value(1));
     }
 
+            @Test
+            void testCreateCyclicExpenseWithoutTotalCycles() throws Exception {
+            CreateCyclicExpenseRequest toCreate = CreateCyclicExpenseRequest.builder()
+                .name("Streaming")
+                .cycleInterval(1)
+                .active(true)
+                .initialAmount(new BigDecimal("29.99"))
+                .validFrom(LocalDate.of(2026, 2, 1))
+                .build();
+
+            mockMvc.perform(post("/v1/cyclic-expenses")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(toCreate)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Streaming"))
+                .andExpect(jsonPath("$.cycleInterval").value(1))
+                .andExpect(jsonPath("$.rates.length()").value(1));
+            }
+
     @Test
     void testGetAllCyclicExpenses() throws Exception {
         repository.save(cyclicExpense);

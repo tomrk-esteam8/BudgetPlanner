@@ -94,7 +94,7 @@ class MonthlySummaryServiceTest {
     void testCalculateSummaryWithoutData() {
         MonthlySummary summary = summaryService.calculate(month, null, null, cyclicExpenses, expenses);
 
-        assertEquals(LocalDate.of(2026, 2, 6), summary.getDate());
+                assertEquals(LocalDate.now(), summary.getDate());
         assertEquals(BigDecimal.ZERO, summary.getFunds());
         assertEquals(BigDecimal.ZERO, summary.getSavings());
     }

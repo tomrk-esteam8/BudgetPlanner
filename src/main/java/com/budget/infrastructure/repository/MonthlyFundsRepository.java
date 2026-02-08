@@ -9,7 +9,9 @@ import java.util.Optional;
 
 @Repository
 public interface MonthlyFundsRepository extends JpaRepository<MonthlyFunds, Long> {
-    Optional<MonthlyFunds> findByYearAndMonth(int year, int month);
+    List<MonthlyFunds> findByYearAndMonth(int year, int month);
+
+    Optional<MonthlyFunds> findTopByYearAndMonthOrderByIdDesc(int year, int month);
 
     List<MonthlyFunds> findByYear(int year);
 }

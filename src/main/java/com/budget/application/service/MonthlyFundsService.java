@@ -15,11 +15,26 @@ public class MonthlyFundsService {
     private final MonthlyFundsRepository repository;
 
     public MonthlyFunds save(MonthlyFunds monthlyFunds) {
+        List<MonthlyFunds> existing = repository.findByYearAndMonth(
+                monthlyFunds.getYear(),
+                monthlyFunds.getMonth()
+        );
+
+        if (!existing.isEmpty()) {
+            throw new IllegalArgumentException(
+                String.format(
+                    "Monthly funds already exist for %d-%02d",
+                    monthlyFunds.getYear(),
+                    monthlyFunds.getMonth()
+                )
+            );
+        }
+
         return repository.save(monthlyFunds);
     }
 
     public Optional<MonthlyFunds> findByYearAndMonth(int year, int month) {
-        return repository.findByYearAndMonth(year, month);
+        return repository.findTopByYearAndMonthOrderByIdDesc(year, month);
     }
 
     public List<MonthlyFunds> findByYear(int year) {

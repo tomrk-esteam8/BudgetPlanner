@@ -90,8 +90,9 @@ public class MonthlySummaryController {
         YearMonth yearMonth = YearMonth.from(requestDate);
         AccountingMonth accountingMonth = new AccountingMonth(yearMonth);
 
-        MonthlyFunds funds = fundsRepository.findByYearAndMonth(yearMonth.getYear(), yearMonth.getMonthValue())
-                .orElse(null);
+        MonthlyFunds funds = fundsRepository
+            .findTopByYearAndMonthOrderByIdDesc(yearMonth.getYear(), yearMonth.getMonthValue())
+            .orElse(null);
         MonthlySavings savings = savingsRepository.findAll().stream()
                 .findFirst()
                 .orElse(null);
@@ -137,8 +138,9 @@ public class MonthlySummaryController {
         YearMonth yearMonth = YearMonth.of(year, month);
         AccountingMonth accountingMonth = new AccountingMonth(yearMonth);
         
-        MonthlyFunds funds = fundsRepository.findByYearAndMonth(year, month)
-                .orElse(null);
+        MonthlyFunds funds = fundsRepository
+            .findTopByYearAndMonthOrderByIdDesc(year, month)
+            .orElse(null);
         MonthlySavings savings = savingsRepository.findAll().stream()
                 .findFirst()
                 .orElse(null);
