@@ -2,7 +2,21 @@
 
 A Spring Boot application for managing budget, monthly funds, savings, and cyclic expenses.
 
+## Contents
+- [Architecture](#architecture)
+- [Project Structure](#project-structure)
+- [Building and Running](#building-and-running)
+- [API Documentation](#api-documentation)
+- [API Endpoints](#api-endpoints)
+- [Example Requests](#example-requests)
+- [Testing](#testing)
+- [Key Design Decisions](#key-design-decisions)
+- [Database](#database)
+- [Dependencies](#dependencies)
+
 ## Architecture
+
+### Backend Architecture
 
 The application follows a layered architecture pattern:
 
@@ -21,6 +35,18 @@ The application follows a layered architecture pattern:
 
 - **Infrastructure Layer**: Data access objects and repositories
   - Repositories: MonthlyFundsRepository, MonthlySavingsRepository, CyclicExpenseRepository, ExpenseRepository
+
+### Frontend Architecture
+
+The React frontend is intentionally small and centered around a single page UI.
+
+- **Entry**: [frontend/src/main.tsx](frontend/src/main.tsx) wires React, loads Bootstrap CSS, and mounts the app.
+- **UI + State**: [frontend/src/App.tsx](frontend/src/App.tsx) renders the summary and expense form, manages local state, and calls the API layer.
+- **API Layer**: [frontend/src/api/budgetApi.ts](frontend/src/api/budgetApi.ts) contains typed API helpers for summary and expense endpoints.
+- **Styling**: [frontend/src/App.css](frontend/src/App.css) provides component styles; [frontend/src/index.css](frontend/src/index.css) adds global styles.
+- **Unit Tests**: [frontend/src/__tests__/App.test.tsx](frontend/src/__tests__/App.test.tsx) covers summary and expense form behavior.
+- **E2E Tests**: [frontend/tests/e2e](frontend/tests/e2e) contains Playwright smoke tests.
+- **Tooling**: [frontend/vite.config.ts](frontend/vite.config.ts) configures Vite/Vitest; [frontend/playwright.config.ts](frontend/playwright.config.ts) configures Playwright.
 
 ## Project Structure
 
@@ -108,7 +134,7 @@ mvn clean install
 ./mvnw spring-boot:run
 ```
 
-The API will be available at:
+API base:
 ```
 http://localhost:8080/api
 ```
@@ -120,7 +146,7 @@ npm install
 npm run dev
 ```
 
-The UI will be available at:
+UI:
 ```
 http://localhost:5173
 ```
