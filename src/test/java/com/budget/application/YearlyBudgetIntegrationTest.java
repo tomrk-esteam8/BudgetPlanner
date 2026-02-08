@@ -203,7 +203,9 @@ class YearlyBudgetIntegrationTest {
         YearMonth yearMonth = YearMonth.of(2025, month);
         AccountingMonth accountingMonth = new AccountingMonth(yearMonth);
         
-        MonthlyFunds funds = monthlyFundsRepository.findByYearAndMonth(2025, month).orElseThrow();
+        MonthlyFunds funds = monthlyFundsRepository
+            .findTopByYearAndMonthOrderByIdDesc(2025, month)
+            .orElseThrow();
         MonthlySavings savings = MonthlySavings.builder().amount(new BigDecimal("1000.00")).build();
         List<CyclicExpense> cyclicExpenses = cyclicExpenseRepository.findAll();
         List<Expense> expenses = expenseRepository.findBySpentAtBetween(
@@ -524,7 +526,9 @@ class YearlyBudgetIntegrationTest {
         AccountingMonth accountingMonth = new AccountingMonth(yearMonth);
         LocalDate date = LocalDate.of(2025, month, day);
         
-        MonthlyFunds funds = monthlyFundsRepository.findByYearAndMonth(2025, month).orElseThrow();
+        MonthlyFunds funds = monthlyFundsRepository
+            .findTopByYearAndMonthOrderByIdDesc(2025, month)
+            .orElseThrow();
         MonthlySavings savings = MonthlySavings.builder().amount(new BigDecimal("1000.00")).build();
         List<CyclicExpense> cyclicExpenses = cyclicExpenseRepository.findAll();
         List<Expense> expenses = expenseRepository.findBySpentAtBetween(

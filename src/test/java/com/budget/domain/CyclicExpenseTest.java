@@ -88,6 +88,20 @@ class CyclicExpenseTest {
     }
 
     @Test
+    void testRateForMonthWithMidMonthValidFrom() {
+        CyclicExpenseRate rate = CyclicExpenseRate.builder()
+                .amount(new BigDecimal("900.00"))
+                .validFrom(LocalDate.of(2026, 2, 8))
+                .build();
+
+        cyclicExpense.getRates().add(rate);
+
+        Optional<CyclicExpenseRate> februaryRate = cyclicExpense.rateFor(YearMonth.of(2026, 2));
+        assertTrue(februaryRate.isPresent());
+        assertEquals(new BigDecimal("900.00"), februaryRate.get().getAmount());
+    }
+
+    @Test
     void testRateForMonthReturnsOnlyActiveRates() {
         CyclicExpenseRate inactiveRate = CyclicExpenseRate.builder()
                 .amount(new BigDecimal("1000.00"))

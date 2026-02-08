@@ -58,10 +58,10 @@ public class CyclicExpense {
     }
 
     public Optional<CyclicExpenseRate> rateFor(YearMonth month) {
-        LocalDate startOfMonth = month.atDay(1);
+        LocalDate endOfMonth = month.atEndOfMonth();
         return this.rates.stream()
                 .filter(CyclicExpenseRate::isActive)
-                .filter(rate -> !rate.getValidFrom().isAfter(startOfMonth))
+            .filter(rate -> !rate.getValidFrom().isAfter(endOfMonth))
                 .max((r1, r2) -> r1.getValidFrom().compareTo(r2.getValidFrom()));
     }
 
