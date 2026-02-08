@@ -98,6 +98,23 @@ class MonthlyFundsControllerTest {
                 .andExpect(jsonPath("$[0].year").value(2026));
     }
 
+    @Test
+    void testGetMonthlyFundsPageReturnsTenItems() throws Exception {
+        for (int i = 1; i <= 12; i++) {
+            repository.save(MonthlyFunds.builder()
+                    .year(2026)
+                    .month(i)
+                    .amount(new BigDecimal("5000.00"))
+                    .build());
+        }
+
+        mockMvc.perform(get("/v1/monthly-funds?page=0&size=10")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(10))
+                .andExpect(jsonPath("$.totalElements").value(12));
+    }
+
             @Test
             void testGetByYearReturnsMultipleEntries() throws Exception {
             MonthlyFunds feb = MonthlyFunds.builder()

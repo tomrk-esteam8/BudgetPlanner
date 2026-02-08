@@ -115,6 +115,26 @@ class CyclicExpenseControllerTest {
     }
 
     @Test
+    void testGetCyclicExpensesPageReturnsTenItems() throws Exception {
+        for (int i = 1; i <= 12; i++) {
+            repository.save(CyclicExpense.builder()
+                    .id(UUID.randomUUID())
+                    .name("Expense " + i)
+                    .cycleInterval(1)
+                    .totalCycles(12)
+                    .active(true)
+                    .rates(new HashSet<>())
+                    .build());
+        }
+
+        mockMvc.perform(get("/v1/cyclic-expenses?page=0&size=10")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(10))
+                .andExpect(jsonPath("$.totalElements").value(12));
+    }
+
+    @Test
     void testGetCyclicExpenseById() throws Exception {
         CyclicExpense saved = repository.save(cyclicExpense);
 

@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { vi } from 'vitest'
 import App from '../App'
 
@@ -61,14 +62,22 @@ describe('App', () => {
   })
 
   it('renders summary data after fetching', async () => {
-    render(<App />)
+    render(
+      <MemoryRouter>
+        <App />
+      </MemoryRouter>,
+    )
 
     expect(await screen.findByText('$3,400.00')).toBeInTheDocument()
     expect(screen.getByText('Budget Summary')).toBeInTheDocument()
   })
 
   it('submits an expense and refreshes data', async () => {
-    render(<App />)
+    render(
+      <MemoryRouter>
+        <App />
+      </MemoryRouter>,
+    )
 
     await screen.findByText('$3,400.00')
 

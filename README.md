@@ -159,13 +159,25 @@ sent to `http://localhost:8080`.
 bash scripts/dev.sh
 ```
 
-This script runs both dev servers and shuts them down together when you press
-Ctrl+C. By default it preloads sample data for the current year.
+This script uses Docker Compose, cleans up any previous run, and starts both dev
+servers. By default it preloads sample data for the current year.
 
 To skip seed data:
 ```bash
 bash scripts/dev.sh --no-seed
 ```
+
+### Run with Docker Compose (Dev)
+```bash
+docker compose up --build
+```
+
+Stop containers:
+```bash
+docker compose down
+```
+
+This starts the backend on port 8080 and the frontend on port 5173.
 
 ## API Documentation
 

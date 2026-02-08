@@ -3,6 +3,8 @@ package com.budget.application.service;
 import com.budget.domain.MonthlyFunds;
 import com.budget.infrastructure.repository.MonthlyFundsRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -45,7 +47,33 @@ public class MonthlyFundsService {
         return repository.findAll();
     }
 
+    public Page<MonthlyFunds> findAll(Pageable pageable) {
+        return repository.findAll(pageable);
+    }
+
     public void delete(Long id) {
         repository.deleteById(id);
+    }
+
+    public MonthlyFunds update(Long id, MonthlyFunds request) {
+        MonthlyFunds existing = repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Monthly funds not found"));
+
+        List<MonthlyFunds> dupes = repository.findByYearAndMonth(request.getYear(), request.getMonth());
+        boolean hasOther = dupes.stream().anyMatch(item -> !item.getId().equals(existing.getId()));
+        if (hasOther) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Monthly funds already exist for %d-%02d",
+                            request.getYear(),
+                            request.getMonth()
+                    )
+            );
+        }
+
+        existing.setYear(request.getYear());
+        existing.setMonth(request.getMonth());
+        existing.setAmount(request.getAmount());
+        return repository.save(existing);
     }
 }

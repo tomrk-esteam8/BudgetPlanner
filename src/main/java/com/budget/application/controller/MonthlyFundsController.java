@@ -8,6 +8,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,6 +41,16 @@ public class MonthlyFundsController {
     public ResponseEntity<List<MonthlyFunds>> getAll() {
         List<MonthlyFunds> funds = service.findAll();
         return ResponseEntity.ok(funds);
+    }
+
+    @GetMapping(params = {"page", "size"})
+    @Operation(summary = "Get monthly funds page", description = "Retrieve monthly funds with pagination")
+    @ApiResponse(responseCode = "200", description = "List of monthly funds")
+    public ResponseEntity<Page<MonthlyFunds>> getPage(
+            @RequestParam int page,
+            @RequestParam int size) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by("year", "month").descending());
+        return ResponseEntity.ok(service.findAll(pageable));
     }
 
     @GetMapping("/{year}/{month}")
@@ -73,5 +86,19 @@ public class MonthlyFundsController {
             @Parameter(description = "Monthly funds ID", example = "1") @PathVariable Long id) {
         service.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Update monthly funds", description = "Update a monthly funds entry by ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Monthly funds updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request body"),
+            @ApiResponse(responseCode = "404", description = "Monthly funds not found")
+    })
+    public ResponseEntity<MonthlyFunds> update(
+            @Parameter(description = "Monthly funds ID", example = "1") @PathVariable Long id,
+            @RequestBody MonthlyFunds monthlyFunds) {
+        MonthlyFunds saved = service.update(id, monthlyFunds);
+        return ResponseEntity.ok(saved);
     }
 }

@@ -1,15 +1,18 @@
 package com.budget.application.controller;
 
 import com.budget.application.dto.CreateCyclicExpenseRequest;
+import com.budget.application.dto.UpdateCyclicExpenseRequest;
 import com.budget.application.service.CyclicExpenseService;
 import com.budget.domain.CyclicExpense;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -43,6 +46,16 @@ public class CyclicExpenseController {
         return ResponseEntity.ok(expenses);
     }
 
+    @GetMapping(params = {"page", "size"})
+    @Operation(summary = "Get cyclic expenses page", description = "Retrieve cyclic expenses with pagination")
+    @ApiResponse(responseCode = "200", description = "List of cyclic expenses")
+    public ResponseEntity<Page<CyclicExpense>> getPage(
+            @RequestParam int page,
+            @RequestParam int size) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by("name").ascending());
+        return ResponseEntity.ok(service.findAll(pageable));
+    }
+
     @GetMapping("/active")
     @Operation(summary = "Get active cyclic expenses", description = "Retrieve only active cyclic expenses")
     @ApiResponse(responseCode = "200", description = "List of active cyclic expenses")
@@ -74,5 +87,19 @@ public class CyclicExpenseController {
             @Parameter(description = "Cyclic expense ID", example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable UUID id) {
         service.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Update cyclic expense", description = "Update a cyclic expense by ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Cyclic expense updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request body"),
+            @ApiResponse(responseCode = "404", description = "Cyclic expense not found")
+    })
+    public ResponseEntity<CyclicExpense> update(
+            @Parameter(description = "Cyclic expense ID", example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable UUID id,
+            @RequestBody UpdateCyclicExpenseRequest request) {
+        CyclicExpense saved = service.update(id, request);
+        return ResponseEntity.ok(saved);
     }
 }

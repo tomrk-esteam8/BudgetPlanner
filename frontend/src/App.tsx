@@ -1,8 +1,13 @@
 import type { FormEvent } from 'react'
 import { useEffect, useMemo, useState } from 'react'
+import { Link, Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
 import { createExpense, fetchSummary } from './api/budgetApi'
 import type { MonthlySummary } from './api/budgetApi'
+import AdminLayout from './admin/AdminLayout'
+import AdminCyclicExpensesPage from './admin/AdminCyclicExpensesPage'
+import AdminExpensesPage from './admin/AdminExpensesPage'
+import AdminMonthlyFundsPage from './admin/AdminMonthlyFundsPage'
 
 function App() {
   const today = new Date()
@@ -124,10 +129,15 @@ function App() {
       })
     : 'No data'
 
-  return (
+  const homeContent = (
     <div className="app-shell">
       <div className="app-glow" aria-hidden="true" />
       <main className="container py-4 py-lg-5">
+        <div className="d-flex justify-content-end mb-3">
+          <Link className="btn btn-outline-light" to="/admin">
+            Admin Panel
+          </Link>
+        </div>
         <div className="row align-items-start gy-4">
           <div className="col-lg-6">
             <div className="glass-card p-4 p-lg-5 float-in">
@@ -287,6 +297,19 @@ function App() {
         </div>
       </main>
     </div>
+  )
+
+  return (
+    <Routes>
+      <Route path="/" element={homeContent} />
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<Navigate to="expenses" replace />} />
+        <Route path="expenses" element={<AdminExpensesPage />} />
+        <Route path="monthly-funds" element={<AdminMonthlyFundsPage />} />
+        <Route path="cyclic-expenses" element={<AdminCyclicExpensesPage />} />
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }
 

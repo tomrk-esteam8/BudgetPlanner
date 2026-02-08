@@ -10,12 +10,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
-import java.time.YearMonth;
 import java.util.List;
 
 @RestController
@@ -38,6 +38,16 @@ public class ExpenseController {
     @ApiResponse(responseCode = "200", description = "Expenses retrieved successfully")
     public ResponseEntity<List<Expense>> getAll() {
         return ResponseEntity.ok(repository.findAll());
+    }
+
+    @GetMapping(params = {"page", "size"})
+    @Operation(summary = "Get expenses page", description = "Retrieve expenses with pagination")
+    @ApiResponse(responseCode = "200", description = "Expenses retrieved successfully")
+    public ResponseEntity<Page<Expense>> getPage(
+            @RequestParam int page,
+            @RequestParam int size) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by("spentAt").descending());
+        return ResponseEntity.ok(repository.findAll(pageable));
     }
 
     @GetMapping("/{id}")
@@ -74,5 +84,23 @@ public class ExpenseController {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.notFound().build();
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Update expense", description = "Update a specific expense by its ID")
+    @Parameter(name = "id", description = "Expense ID", example = "1")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Expense updated successfully"),
+            @ApiResponse(responseCode = "404", description = "Expense not found")
+    })
+    public ResponseEntity<Expense> update(@PathVariable Long id, @RequestBody Expense request) {
+        return repository.findById(id)
+                .map(existing -> {
+                    existing.setAmount(request.getAmount());
+                    existing.setCategory(request.getCategory());
+                    existing.setSpentAt(request.getSpentAt());
+                    return ResponseEntity.ok(repository.save(existing));
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 }

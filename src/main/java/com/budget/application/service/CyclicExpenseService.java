@@ -1,10 +1,13 @@
 package com.budget.application.service;
 
 import com.budget.application.dto.CreateCyclicExpenseRequest;
+import com.budget.application.dto.UpdateCyclicExpenseRequest;
 import com.budget.domain.CyclicExpense;
 import com.budget.domain.CyclicExpenseRate;
 import com.budget.infrastructure.repository.CyclicExpenseRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
@@ -65,11 +68,47 @@ public class CyclicExpenseService {
         return repository.findAll();
     }
 
+    public Page<CyclicExpense> findAll(Pageable pageable) {
+        return repository.findAll(pageable);
+    }
+
     public List<CyclicExpense> findActiveExpenses() {
         return repository.findByActive(true);
     }
 
     public void delete(UUID id) {
         repository.deleteById(id);
+    }
+
+    public CyclicExpense update(UUID id, UpdateCyclicExpenseRequest request) {
+        CyclicExpense expense = repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Cyclic expense not found"));
+
+        if (request.getName() != null) {
+            expense.setName(request.getName().trim());
+        }
+        if (request.getCycleInterval() != null) {
+            expense.setCycleInterval(request.getCycleInterval());
+        }
+        if (request.getTotalCycles() != null) {
+            expense.setTotalCycles(request.getTotalCycles());
+        }
+        if (request.getActive() != null) {
+            expense.setActive(request.getActive());
+        }
+
+        if (request.getAmount() != null && request.getValidFrom() != null) {
+            expense.getRates().forEach(rate -> rate.setActive(false));
+
+            CyclicExpenseRate newRate = CyclicExpenseRate.builder()
+                    .amount(request.getAmount())
+                    .validFrom(request.getValidFrom())
+                    .active(true)
+                    .cyclicExpense(expense)
+                    .build();
+            expense.getRates().add(newRate);
+        }
+
+        return repository.save(expense);
     }
 }

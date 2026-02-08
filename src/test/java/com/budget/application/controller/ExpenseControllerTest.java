@@ -100,6 +100,24 @@ class ExpenseControllerTest {
     }
 
     @Test
+    void testGetExpensesPageReturnsTenItems() throws Exception {
+        LocalDate baseDate = LocalDate.now().minusDays(20);
+        for (int i = 1; i <= 12; i++) {
+            repository.save(Expense.builder()
+                    .amount(new BigDecimal("10.00"))
+                    .category("Food")
+                    .spentAt(baseDate.plusDays(i))
+                    .build());
+        }
+
+        mockMvc.perform(get("/v1/expenses?page=0&size=10")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(10))
+                .andExpect(jsonPath("$.totalElements").value(12));
+    }
+
+    @Test
     void testDeleteExpense() throws Exception {
         Expense saved = repository.save(expense);
 
