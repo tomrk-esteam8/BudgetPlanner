@@ -4,11 +4,17 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
+SPRING_ARGS=("--budget.seed-current-year=true")
+if [[ "${1:-}" == "--no-seed" ]]; then
+  SPRING_ARGS=()
+fi
+
 if [ ! -d "frontend/node_modules" ]; then
   npm --prefix frontend install
 fi
 
-./mvnw spring-boot:run &
+SPRING_BOOT_ARGS="${SPRING_ARGS[*]:-}"
+./mvnw spring-boot:run ${SPRING_BOOT_ARGS:+-Dspring-boot.run.arguments="$SPRING_BOOT_ARGS"} &
 BACKEND_PID=$!
 
 npm --prefix frontend run dev &

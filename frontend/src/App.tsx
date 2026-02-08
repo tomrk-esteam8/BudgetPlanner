@@ -5,11 +5,13 @@ import {
   createCyclicExpense,
   createExpense,
   createMonthlyFunds,
+  fetchCyclicExpenses,
   fetchExpenses,
   fetchMonthlyFundsByYear,
   fetchSummary,
 } from './api/budgetApi'
 import type {
+  CyclicExpense,
   Expense,
   MonthlyFunds,
   MonthlySummary,
@@ -29,6 +31,12 @@ function App() {
   const [expensesLoading, setExpensesLoading] = useState(false)
   const [expensesError, setExpensesError] = useState<string | null>(null)
   const [summaryError, setSummaryError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<
+    'overview' | 'summary' | 'expense' | 'funds' | 'cyclic' | 'yearly'
+  >('overview')
+  const [year, setYear] = useState(todayYear)
+  const [month, setMonth] = useState(todayMonth)
+  const [day, setDay] = useState(todayDay)
 
   const [expenseAmount, setExpenseAmount] = useState('')
   const [expenseCategory, setExpenseCategory] = useState('')
@@ -57,9 +65,9 @@ function App() {
   const [cyclicName, setCyclicName] = useState('')
   const [cyclicInterval, setCyclicInterval] = useState('1')
   const [cyclicTotalCycles, setCyclicTotalCycles] = useState('')
-  const [cyclicActive, setCyclicActive] = useState(true)
   const [cyclicAmount, setCyclicAmount] = useState('')
   const [cyclicValidFrom, setCyclicValidFrom] = useState(todayIso)
+  const [cyclicActive, setCyclicActive] = useState(true)
   const [cyclicSubmitting, setCyclicSubmitting] = useState(false)
   const [cyclicError, setCyclicError] = useState<string | null>(null)
   const [cyclicSuccess, setCyclicSuccess] = useState<string | null>(null)
@@ -73,16 +81,13 @@ function App() {
 
   const [yearlyOverviewYear, setYearlyOverviewYear] = useState(todayYear)
   const [yearlyOverviewData, setYearlyOverviewData] = useState<MonthlyFunds[]>([])
+  const [yearlyOverviewCyclicExpenses, setYearlyOverviewCyclicExpenses] =
+    useState<CyclicExpense[]>([])
+  const [yearlyOverviewExpenseTotal, setYearlyOverviewExpenseTotal] = useState(0)
+  const [yearlyOverviewExpenseCount, setYearlyOverviewExpenseCount] = useState(0)
+  const [yearlyOverviewCyclicTotal, setYearlyOverviewCyclicTotal] = useState(0)
   const [yearlyOverviewLoading, setYearlyOverviewLoading] = useState(false)
   const [yearlyOverviewError, setYearlyOverviewError] = useState<string | null>(null)
-
-  const [activeTab, setActiveTab] = useState(
-    'overview' as 'overview' | 'summary' | 'expense' | 'funds' | 'cyclic' | 'yearly',
-  )
-
-  const [year, setYear] = useState(todayYear)
-  const [month, setMonth] = useState(todayMonth)
-  const [day, setDay] = useState(todayDay)
 
   const currency = useMemo(
     () =>
@@ -374,13 +379,48 @@ function App() {
 
     setYearlyOverviewLoading(true)
     try {
-      const data = await fetchMonthlyFundsByYear(yearValue)
-      setYearlyOverviewData(data)
+      const [fundsData, expensesData, cyclicData] = await Promise.all([
+        fetchMonthlyFundsByYear(yearValue),
+        fetchExpenses(),
+        fetchCyclicExpenses(),
+      ])
+
+      setYearlyOverviewData(fundsData)
+      setYearlyOverviewCyclicExpenses(cyclicData)
+
+      const yearExpenses = expensesData.filter((expense) => {
+        const expenseYear = new Date(`${expense.spentAt}T00:00:00`).getFullYear()
+        return expenseYear === yearValue
+      })
+
+      const expenseTotal = yearExpenses.reduce(
+        (total, expense) => total + expense.amount,
+        0,
+      )
+
+      const endOfYear = new Date(yearValue, 11, 31)
+      const cyclicTotal = cyclicData.reduce((total, expense) => {
+        const activeRates = expense.rates.filter((rate) => rate.active)
+        const applicable = activeRates
+          .filter((rate) => new Date(`${rate.validFrom}T00:00:00`) <= endOfYear)
+          .sort((a, b) => b.validFrom.localeCompare(a.validFrom))
+        const fallback = activeRates.sort((a, b) => b.validFrom.localeCompare(a.validFrom))
+        const rate = (applicable.length > 0 ? applicable : fallback)[0]
+        return total + (rate?.amount ?? 0)
+      }, 0)
+
+      setYearlyOverviewExpenseCount(yearExpenses.length)
+      setYearlyOverviewExpenseTotal(expenseTotal)
+      setYearlyOverviewCyclicTotal(cyclicTotal)
     } catch (error) {
       setYearlyOverviewError(
         error instanceof Error ? error.message : 'Failed to load yearly overview.',
       )
       setYearlyOverviewData([])
+      setYearlyOverviewCyclicExpenses([])
+      setYearlyOverviewExpenseTotal(0)
+      setYearlyOverviewExpenseCount(0)
+      setYearlyOverviewCyclicTotal(0)
     } finally {
       setYearlyOverviewLoading(false)
     }
@@ -1038,6 +1078,70 @@ function App() {
                     </div>
                   ) : null}
                 </form>
+                <div className="row g-3 mt-3">
+                  <div className="col-md-6">
+                    <div className="mini-card">
+                      <span className="muted">Total Expenses (year)</span>
+                      <div className="value">
+                        {currency.format(yearlyOverviewExpenseTotal)}
+                      </div>
+                      <div className="helper">
+                        {yearlyOverviewExpenseCount} expense entries
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <div className="mini-card">
+                      <span className="muted">Cyclic Costs (current rate)</span>
+                      <div className="value">
+                        {currency.format(yearlyOverviewCyclicTotal)}
+                      </div>
+                      <div className="helper">Active cyclic expense rates</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="table-responsive mt-3">
+                  <table className="table table-borderless align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th>Cyclic Expense</th>
+                        <th>Interval</th>
+                        <th>Status</th>
+                        <th className="text-end">Current Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {yearlyOverviewLoading ? (
+                        <tr>
+                          <td colSpan={4} className="text-center muted py-4">
+                            Loading cyclic expenses...
+                          </td>
+                        </tr>
+                      ) : yearlyOverviewCyclicExpenses.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="text-center muted py-4">
+                            No cyclic expenses found.
+                          </td>
+                        </tr>
+                      ) : (
+                        yearlyOverviewCyclicExpenses.map((expense) => {
+                          const activeRates = expense.rates.filter((rate) => rate.active)
+                          const rate = activeRates.sort((a, b) => b.validFrom.localeCompare(a.validFrom))[0]
+                          return (
+                            <tr key={expense.id ?? expense.name}>
+                              <td>{expense.name}</td>
+                              <td>Every {expense.cycleInterval} mo</td>
+                              <td>{expense.active ? 'Active' : 'Inactive'}</td>
+                              <td className="text-end">
+                                {rate ? currency.format(rate.amount) : '—'}
+                              </td>
+                            </tr>
+                          )
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
                 <div className="table-responsive mt-3">
                   <table className="table table-borderless align-middle mb-0">
                     <thead>

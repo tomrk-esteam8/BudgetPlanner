@@ -134,7 +134,12 @@ bash scripts/dev.sh
 ```
 
 This script runs both dev servers and shuts them down together when you press
-Ctrl+C.
+Ctrl+C. By default it preloads sample data for the current year.
+
+To skip seed data:
+```bash
+bash scripts/dev.sh --no-seed
+```
 
 ## API Documentation
 

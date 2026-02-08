@@ -37,6 +37,22 @@ export type CreateCyclicExpenseRequest = {
   validFrom: string
 }
 
+export type CyclicExpenseRate = {
+  id?: number
+  amount: number
+  validFrom: string
+  active: boolean
+}
+
+export type CyclicExpense = {
+  id?: string
+  name: string
+  cycleInterval: number
+  totalCycles?: number
+  active: boolean
+  rates: CyclicExpenseRate[]
+}
+
 const API_BASE = '/api/v1'
 
 const defaultHeaders = {
@@ -102,4 +118,8 @@ export async function createCyclicExpense(
     method: 'POST',
     body: JSON.stringify(payload),
   })
+}
+
+export async function fetchCyclicExpenses(): Promise<CyclicExpense[]> {
+  return request<CyclicExpense[]>('/cyclic-expenses')
 }
